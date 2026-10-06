@@ -1,0 +1,101 @@
+{{- if .Values.worker.enabled }}
+{{- $component := "worker" }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "ch.fullname" . }}-worker
+  labels:
+    {{- include "ch.labels" . | nindent 4 }}
+    app.kubernetes.io/component: {{ $component }}
+spec:
+  replicas: {{ .Values.worker.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "ch.selectorLabels" (dict "ctx" . "component" $component) | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "ch.labels" . | nindent 8 }}
+        app.kubernetes.io/component: {{ $component }}
+    spec:
+      {{- include "ch.imagePullSecrets" . | nindent 6 }}
+      # Runs model-generated shell commands: no API token, no secrets, no database access.
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: worker
+          image: {{ include "ch.image" (dict "ctx" . "image" .Values.worker.image) }}
+          imagePullPolicy: {{ .Values.worker.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8100
+          livenessProbe:
+            tcpSocket: { port: http }
+          readinessProbe:
+            tcpSocket: { port: http }
+            periodSeconds: 5
+          securityContext:
+            {{- toYaml .Values.containerSecurityContext | nindent 12 }}
+          resources:
+            {{- toYaml .Values.worker.resources | nindent 12 }}
+          volumeMounts:
+            - name: workspace
+              mountPath: /app/brain_harness/workspace
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: workspace
+          emptyDir:
+            sizeLimit: {{ .Values.worker.workspaceSizeLimit }}
+        - name: tmp
+          emptyDir:
+            sizeLimit: 256Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "ch.fullname" . }}-worker
+  labels:
+    {{- include "ch.labels" . | nindent 4 }}
+    app.kubernetes.io/component: {{ $component }}
+spec:
+  selector:
+    {{- include "ch.selectorLabels" (dict "ctx" . "component" $component) | nindent 4 }}
+  ports:
+    - name: http
+      port: 8100
+      targetPort: http
+{{- if .Values.worker.networkPolicy.enabled }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "ch.fullname" . }}-worker
+  labels:
+    {{- include "ch.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "ch.selectorLabels" (dict "ctx" . "component" $component) | nindent 6 }}
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              {{- include "ch.selectorLabels" (dict "ctx" . "component" "api") | nindent 14 }}
+        {{- range .Values.worker.networkPolicy.allowedClients }}
+        - podSelector:
+            {{- toYaml . | nindent 12 }}
+        {{- end }}
+      ports:
+        - port: 8100
+  {{- if .Values.worker.networkPolicy.allowEgress }}
+  egress:
+    - {}
+  {{- else }}
+  egress: []
+  {{- end }}
+{{- end }}
+{{- end }}

@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: {{ include "ch.fullname" . }}-test
+  labels:
+    {{- include "ch.labels" . | nindent 4 }}
+  annotations:
+    helm.sh/hook: test
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+spec:
+  restartPolicy: Never
+  automountServiceAccountToken: false
+  securityContext:
+    {{- toYaml .Values.podSecurityContext | nindent 4 }}
+  containers:
+    - name: smoke
+      image: {{ include "ch.image" (dict "ctx" . "image" .Values.api.image) }}
+      imagePullPolicy: {{ .Values.api.image.pullPolicy }}
+      command:
+        - python
+        - -c
+        - |
+          import urllib.request
+          for url in ["http://{{ include "ch.fullname" . }}-api:8000/ready",
+                      "http://{{ include "ch.fullname" . }}-frontend:8080/healthz"]:
+              with urllib.request.urlopen(url, timeout=5) as r:
+                  print(url, r.status)
+                  assert r.status == 200
+      securityContext:
+        {{- toYaml .Values.containerSecurityContext | nindent 8 }}
