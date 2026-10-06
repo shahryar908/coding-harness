@@ -1,0 +1,14 @@
+# Production overrides: managed Postgres + secrets from External Secrets, TLS via cert-manager.
+api:
+  autoscaling: { enabled: true }
+secrets:
+  existingSecret: coding-harness-secrets   # keys: JWT_SECRET, DATABASE_URL
+postgresql:
+  enabled: false
+ingress:
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+  hosts: [coding-harness.example.com]
+  tls:
+    - secretName: coding-harness-tls
+      hosts: [coding-harness.example.com]

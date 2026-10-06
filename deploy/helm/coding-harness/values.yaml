@@ -1,0 +1,114 @@
+# Default values for coding-harness.
+
+global:
+  imageRegistry: ghcr.io/shahryar908
+  imagePullSecrets: []
+
+nameOverride: ""
+fullnameOverride: ""
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 10001
+  runAsGroup: 10001
+  fsGroup: 10001
+  seccompProfile:
+    type: RuntimeDefault
+
+containerSecurityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop: [ALL]
+
+api:
+  image:
+    repository: coding-harness-api
+    tag: ""            # defaults to .Chart.AppVersion
+    pullPolicy: IfNotPresent
+  replicaCount: 2
+  environment: production
+  corsOrigins: ""      # defaults to https://<first ingress host>
+  jwtExpireMinutes: 60
+  resources:
+    requests: { cpu: 100m, memory: 128Mi }
+    limits: { memory: 512Mi }
+  autoscaling:
+    enabled: false
+    minReplicas: 2
+    maxReplicas: 6
+    targetCPUUtilizationPercentage: 70
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 1
+  extraEnv: []
+
+frontend:
+  image:
+    repository: coding-harness-frontend
+    tag: ""
+    pullPolicy: IfNotPresent
+  replicaCount: 2
+  resources:
+    requests: { cpu: 25m, memory: 32Mi }
+    limits: { memory: 128Mi }
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 1
+
+worker:
+  enabled: true
+  image:
+    repository: coding-harness-worker
+    tag: ""
+    pullPolicy: IfNotPresent
+  replicaCount: 1
+  resources:
+    requests: { cpu: 100m, memory: 256Mi }
+    limits: { cpu: "1", memory: 1Gi }
+  workspaceSizeLimit: 2Gi
+  networkPolicy:
+    enabled: true
+    # Pods allowed to call the worker (in addition to the api).
+    allowedClients:
+      - matchLabels:
+          app.kubernetes.io/component: harness
+    # Agent commands get no network access unless this is true.
+    allowEgress: false
+
+secrets:
+  # Use a pre-created Secret (e.g. from External Secrets) with keys JWT_SECRET and DATABASE_URL.
+  existingSecret: ""
+  # Ignored when existingSecret is set. A random JWT secret is generated and preserved across upgrades if empty.
+  jwtSecret: ""
+
+# External database; used when postgresql.enabled is false and secrets.existingSecret is empty.
+externalDatabase:
+  url: ""              # postgresql+psycopg://user:pass@host:5432/db
+
+# Bundled single-instance Postgres for dev/staging. Use a managed database in production.
+postgresql:
+  enabled: true
+  image:
+    repository: postgres
+    tag: 16-alpine
+  auth:
+    username: app
+    database: app
+    password: ""       # generated and preserved across upgrades if empty
+  persistence:
+    size: 8Gi
+    storageClass: ""
+  resources:
+    requests: { cpu: 100m, memory: 256Mi }
+    limits: { memory: 1Gi }
+
+ingress:
+  enabled: true
+  className: ""         # empty = cluster default IngressClass
+  annotations: {}
+  hosts:
+    - coding-harness.local
+  tls: []
+  #  - secretName: coding-harness-tls
+  #    hosts: [coding-harness.example.com]

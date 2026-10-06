@@ -1,0 +1,60 @@
+name: helm-ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    paths:
+      - "deploy/**"
+      - "backend/**"
+      - "frontend/**"
+      - "Tiltfile"
+      - ".github/workflows/helm-ci.yml"
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-helm@v4
+      - name: helm lint
+        run: |
+          for v in values.yaml values-dev.yaml values-prod.yaml; do
+            helm lint deploy/helm/coding-harness -f deploy/helm/coding-harness/$v
+          done
+      - name: kubeconform
+        run: |
+          curl -fsSL https://github.com/yannh/kubeconform/releases/download/v0.8.0/kubeconform-linux-amd64.tar.gz | tar xz kubeconform
+          for v in values.yaml values-dev.yaml values-prod.yaml; do
+            helm template ci deploy/helm/coding-harness -f deploy/helm/coding-harness/$v \
+              | ./kubeconform -strict -summary
+          done
+
+  kind-install:
+    needs: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-helm@v4
+      - uses: helm/kind-action@v1
+        with:
+          cluster_name: coding-harness
+          config: deploy/kind/kind-config.yaml
+      - name: Build and load images
+        run: |
+          docker build -t coding-harness-api:dev --target api backend
+          docker build -t coding-harness-worker:dev --target worker backend
+          docker build -t coding-harness-frontend:dev frontend
+          kind load docker-image --name coding-harness coding-harness-api:dev coding-harness-worker:dev coding-harness-frontend:dev
+      - name: Install chart
+        run: |
+          helm install coding-harness deploy/helm/coding-harness -n coding-harness --create-namespace \
+            -f deploy/helm/coding-harness/values-dev.yaml --set ingress.enabled=false --wait --timeout 5m
+      - name: helm test
+        run: helm test coding-harness -n coding-harness --logs
+      - name: Debug on failure
+        if: failure()
+        run: |
+          kubectl -n coding-harness get pods -o wide
+          kubectl -n coding-harness describe pods | tail -n 80
+          kubectl -n coding-harness logs -l app.kubernetes.io/component=api --all-containers --tail=50

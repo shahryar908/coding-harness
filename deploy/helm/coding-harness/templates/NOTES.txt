@@ -1,0 +1,15 @@
+coding-harness {{ .Chart.AppVersion }} installed as "{{ .Release.Name }}" in namespace "{{ .Release.Namespace }}".
+{{- if .Values.ingress.enabled }}
+
+Open: {{ ternary "https" "http" (gt (len .Values.ingress.tls) 0) }}://{{ first .Values.ingress.hosts }}/
+{{- else }}
+
+  kubectl -n {{ .Release.Namespace }} port-forward svc/{{ include "ch.fullname" . }}-frontend 8080:8080
+{{- end }}
+
+Smoke test: helm test {{ .Release.Name }} -n {{ .Release.Namespace }}
+{{- if .Values.worker.enabled }}
+
+Agent CLI against the in-cluster worker (pod needs label app.kubernetes.io/component=harness, or port-forward):
+  kubectl -n {{ .Release.Namespace }} port-forward svc/{{ include "ch.fullname" . }}-worker 8100:8100
+{{- end }}

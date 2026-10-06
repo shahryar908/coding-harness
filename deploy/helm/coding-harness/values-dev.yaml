@@ -1,0 +1,20 @@
+# Local kind cluster (see deploy/kind). Images are side-loaded with `kind load`.
+global:
+  imageRegistry: ""
+api:
+  image: { tag: dev, pullPolicy: Never }
+  replicaCount: 1
+  environment: development
+  corsOrigins: "*"
+  podDisruptionBudget: { enabled: false }
+frontend:
+  image: { tag: dev, pullPolicy: Never }
+  replicaCount: 1
+  podDisruptionBudget: { enabled: false }
+worker:
+  image: { tag: dev, pullPolicy: Never }
+postgresql:
+  persistence: { size: 1Gi }
+ingress:
+  className: traefik
+  hosts: [localhost]
