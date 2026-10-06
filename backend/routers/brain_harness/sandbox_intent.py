@@ -6,8 +6,9 @@ or can be answered with a simple direct reply.
 
 import json
 import os
-from dotenv import load_dotenv
+
 import openai
+from dotenv import load_dotenv
 
 load_dotenv("../../.env")
 

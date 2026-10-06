@@ -4,10 +4,10 @@ Tiny stand-in for the real execution worker.
 Run it with:  uvicorn mock_worker:app --port 8100
 """
 
-from fastapi import FastAPI
-from pydantic import BaseModel
 from typing import Any
 
+from fastapi import FastAPI
+from pydantic import BaseModel
 from runtime import FakeRuntime
 
 app = FastAPI()

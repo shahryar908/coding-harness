@@ -1,16 +1,16 @@
 # loop.py
 import json
-import time
 import os
+import time
 import uuid
-from dotenv import load_dotenv
-import openai
 
-from tools import OPENAI_TOOLS
-from context import build_system_prompt, compact_messages, COMPACT_AFTER
-from trust import wrap_user_request
+import openai
+from context import COMPACT_AFTER, build_system_prompt, compact_messages
+from dotenv import load_dotenv
 from execute import execute_tool
 from tool_context import ToolContext
+from tools import OPENAI_TOOLS
+from trust import wrap_user_request
 
 load_dotenv("../../.env")
 

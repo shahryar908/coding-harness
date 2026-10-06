@@ -1,5 +1,4 @@
 # tools.py
-import json
 from runtime import FakeRuntime
 from trust import is_dangerous_shell, is_forbidden_path, wrap_tool_result
 
