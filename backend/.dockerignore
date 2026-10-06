@@ -1,0 +1,11 @@
+.venv
+.env
+*.db
+__pycache__
+*.py[oc]
+.pytest_cache
+.ruff_cache
+tests
+Dockerfile
+.dockerignore
+routers/brain_harness/workspace
