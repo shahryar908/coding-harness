@@ -1,0 +1,66 @@
+# Local development stack: docker compose up --build
+# Frontend: http://localhost:8080  API: http://localhost:8000  Worker: http://localhost:8100
+
+x-hardening: &hardening
+  read_only: true
+  cap_drop: [ALL]
+  security_opt: ["no-new-privileges:true"]
+  tmpfs: [/tmp]
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: app
+      POSTGRES_DB: app
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app -d app"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    <<: *hardening
+    build:
+      context: ./backend
+      target: api
+    environment:
+      ENVIRONMENT: development
+      DATABASE_URL: postgresql+psycopg://app:app@postgres:5432/app
+      JWT_SECRET: ${JWT_SECRET:-dev-only-jwt-secret-change-me-0123456789}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8080}
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend:
+    <<: *hardening
+    build: ./frontend
+    tmpfs: [/tmp, /var/cache/nginx]
+    ports:
+      - "8080:8080"
+    depends_on:
+      - api
+
+  # Runs agent tool calls; deliberately gets no secrets and no database access.
+  worker:
+    <<: *hardening
+    build:
+      context: ./backend
+      target: worker
+    volumes:
+      - workspace:/app/brain_harness/workspace
+    ports:
+      - "127.0.0.1:8100:8100"
+    mem_limit: 1g
+    cpus: 1.0
+    pids_limit: 256
+
+volumes:
+  pgdata:
+  workspace:
