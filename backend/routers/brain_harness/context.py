@@ -1,11 +1,11 @@
 # context.py
 import os
-import openai
-from stack import get_stack_hint
-from runtime import FakeRuntime
-from trust import wrap_repo_listing, wrap_user_request
-from dotenv import load_dotenv
 
+import openai
+from dotenv import load_dotenv
+from runtime import FakeRuntime
+from stack import get_stack_hint
+from trust import wrap_repo_listing
 
 load_dotenv("../../.env")
 

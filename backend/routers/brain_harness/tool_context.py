@@ -1,6 +1,5 @@
 # tool_context.py
 from dataclasses import dataclass
-from typing import Optional
 
 
 @dataclass
@@ -10,8 +9,8 @@ class ToolContext:
     """
     task_id: str
     work_dir: str
-    runtime_base_url: Optional[str] = None      # direct fake-runtime or real runtime HTTP
-    execution_worker_url: Optional[str] = None  # when set → Brain mode (go through worker)
+    runtime_base_url: str | None = None      # direct fake-runtime or real runtime HTTP
+    execution_worker_url: str | None = None  # when set → Brain mode (go through worker)
 
     @property
     def use_worker(self) -> bool:

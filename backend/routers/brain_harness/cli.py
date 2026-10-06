@@ -1,8 +1,9 @@
 # cli.py
 import argparse
-from sandbox_intent import plan_brain_execution
-from runtime_chooser import choose_stack_runtime
+
 from loop import run_agent
+from runtime_chooser import choose_stack_runtime
+from sandbox_intent import plan_brain_execution
 
 
 def main():

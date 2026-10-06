@@ -4,13 +4,10 @@ Tool execution layer.
 Splits "what the tool is" from "where it actually runs".
 """
 
-import json
 import httpx
-from typing import Any
-
+from runtime import FakeRuntime
 from tool_context import ToolContext
 from trust import is_dangerous_shell, is_forbidden_path, wrap_tool_result
-from runtime import FakeRuntime
 
 # Local fallback runtime (used when no worker is configured)
 _local_runtime = FakeRuntime()

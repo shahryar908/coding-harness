@@ -3,11 +3,11 @@
 Choose the most appropriate runtime / stack for a user prompt.
 """
 
-import json
 import os
 import re
-from dotenv import load_dotenv
+
 import openai
+from dotenv import load_dotenv
 
 load_dotenv("../../.env")
 

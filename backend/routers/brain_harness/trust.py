@@ -5,7 +5,6 @@ Wraps untrusted content and blocks dangerous tool calls.
 """
 
 import re
-from typing import Optional
 
 # ──────────────────────────────────────────────────────────────
 # 1. Wrappers – clearly mark untrusted content
@@ -52,7 +51,7 @@ DANGEROUS_SHELL_PATTERNS = [
 ]
 
 
-def is_dangerous_shell(command: str) -> Optional[str]:
+def is_dangerous_shell(command: str) -> str | None:
     """
     Return a reason string if the command should be refused,
     otherwise return None.
@@ -79,7 +78,7 @@ FORBIDDEN_PATH_PARTS = [
 ]
 
 
-def is_forbidden_path(path: str) -> Optional[str]:
+def is_forbidden_path(path: str) -> str | None:
     """
     Return a reason if the path is not allowed.
     """
